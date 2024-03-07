@@ -121,8 +121,9 @@ class Human(Player):
                 continue
 
     def _print_field(self):
-        for x in range(field_size):
-            print(*self._field.get_row(x, False))
+        print(*range(field_size))
+        for row in range(field_size):
+            print(*self._field.get_row(row, False) + [row])
 
     def place_boats(self):
         for boat_type in self._fleet:
@@ -201,8 +202,10 @@ class Bot(Player):
 def game_loop():
 
     def _print_fields():
+        spaces = list("      ")
+        print(*([*range(field_size)] + [" "] + spaces + [" "] + [*range(field_size)]))
         for row in range(field_size):
-            print(*(human_field.get_row(row, False) + list("      ") + bot_field.get_row(row, True)))
+            print(*(human_field.get_row(row, False) + [row] + spaces + [row] + bot_field.get_row(row, True)))
 
     def _contains_ships(field: Field):
         contains_ships = False

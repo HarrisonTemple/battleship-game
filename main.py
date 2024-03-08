@@ -1,11 +1,11 @@
 from helpers import *
 
-water_tile = "~"
-ship_tile = "O"
-hit_tile = "X"
-miss_tile = "T"
-field_size: int = 6
-fleet = [(3, 1), (2, 2), (1, 4)]
+WaterTile = "~"
+ShipTile = "O"
+HitTile = "X"
+MissTile = "T"
+FieldSize: int = 6
+Fleet = [(3, 1), (2, 2), (1, 4)]
 
 class Ship:
     _size: int = 1
@@ -30,14 +30,14 @@ class Field:
 
     def __init__(self, size: int = 6):
         self._size = size
-        self._field = [[water_tile for _ in range(size)] for _ in range(size)]
+        self._field = [[WaterTile for _ in range(size)] for _ in range(size)]
 
-    def get_row(self, row: int, fog_of_war: bool):
+    def get_row(self, row: int, fog_of_war: bool = False):
 
         if not fog_of_war:
             return self._field[row]
         else:
-            return [x.replace(ship_tile, water_tile) for x in self._field[row]]
+            return [x.replace(ShipTile, WaterTile) for x in self._field[row]]
 
     def place_ship(self, ship: Ship):
 
@@ -46,39 +46,49 @@ class Field:
             if not coord.is_in_square_bounds(self._size):
                 raise ActionOutOfFieldError
 
-            if self._field[coord.x][coord.y] == ship_tile:
+            if self._field[coord.x][coord.y] == ShipTile:
                 raise ShipIntersectionError
 
             for direction in Directions.all():
                 offset = coord + direction
                 if not offset.is_in_square_bounds(self._size):
                     continue
-                if self._field[offset.x][offset.y] == ship_tile:
+                if self._field[offset.x][offset.y] == ShipTile:
                     raise ShipIntersectionError
 
         else:
             for c in ship.get_coordinates():
-                self._field[c.x][c.y] = ship_tile
+                self._field[c.x][c.y] = ShipTile
 
     def place_shot(self, shot: Vector2Int):
 
         if not shot.is_in_square_bounds(self._size):
             raise ActionOutOfFieldError
 
-        if self._field[shot.x][shot.y] in [hit_tile, miss_tile]:
+        if self._field[shot.x][shot.y] in [HitTile, MissTile]:
             raise HittingTwiceError
 
-        if self._field[shot.x][shot.y] == water_tile:
-            self._field[shot.x][shot.y] = miss_tile
+        if self._field[shot.x][shot.y] == WaterTile:
+            self._field[shot.x][shot.y] = MissTile
             return
-        elif self._field[shot.x][shot.y] == ship_tile:
-            self._field[shot.x][shot.y] = hit_tile
+        elif self._field[shot.x][shot.y] == ShipTile:
+            self._field[shot.x][shot.y] = HitTile
             return
+
+    def contains_ships(self):
+        contains_ships = False
+        for row in range(FieldSize):
+            if ShipTile in self.get_row(row):
+                contains_ships = True
+            else:
+                contains_ships = False
+        return contains_ships
+
 
 class Player:
     def __init__(self):
-        self._field = Field(field_size)
-        self._fleet = fleet
+        self._field = Field(FieldSize)
+        self._fleet = Fleet
 
     def place_boats(self):
         pass
@@ -121,9 +131,9 @@ class Human(Player):
                 continue
 
     def _print_field(self):
-        print(*range(field_size))
-        for row in range(field_size):
-            print(*self._field.get_row(row, False) + [row])
+        print(*range(FieldSize))
+        for row in range(FieldSize):
+            print(*self._field.get_row(row) + [row])
 
     def place_boats(self):
         for boat_type in self._fleet:
@@ -175,7 +185,7 @@ class Bot(Player):
                 while not ship_placed:
                     if attempts >= 10000:
                         raise FieldPopulationFailed
-                    rand_coords = Vector2Int.get_random_in_range(field_size)
+                    rand_coords = Vector2Int.get_random_in_range(FieldSize)
                     dir_count = 0
                     while dir_count < 4:
                         attempts += 1
@@ -192,7 +202,7 @@ class Bot(Player):
     def shoot(self, opponent_field: Field):
         while True:
             try:
-                random_coords = Vector2Int.get_random_in_range(field_size)
+                random_coords = Vector2Int.get_random_in_range(FieldSize)
                 opponent_field.place_shot(random_coords)
                 break
             except (HittingTwiceError, ActionOutOfFieldError):
@@ -203,18 +213,9 @@ def game_loop():
 
     def _print_fields():
         spaces = list("      ")
-        print(*([*range(field_size)] + [" "] + spaces + [" "] + [*range(field_size)]))
-        for row in range(field_size):
-            print(*(human_field.get_row(row, False) + [row] + spaces + [row] + bot_field.get_row(row, True)))
-
-    def _contains_ships(field: Field):
-        contains_ships = False
-        for row in range(field_size):
-            if ship_tile in field.get_row(row, False):
-                contains_ships = True
-            else:
-                contains_ships = False
-        return contains_ships
+        print(*([*range(FieldSize)] + [" "] + spaces + [" "] + [*range(FieldSize)]))
+        for row in range(FieldSize):
+            print(*(human_field.get_row(row) + [row] + spaces + [row] + bot_field.get_row(row, True)))
 
     human = Human()
     human_field = human.get_field
@@ -226,12 +227,12 @@ def game_loop():
     _print_fields()
     while True:
         human.shoot(bot_field)
-        if not _contains_ships(bot_field):
+        if not bot_field.contains_ships():
             print("you won!")
             break
         _print_fields()
         bot.shoot(human_field)
-        if not _contains_ships(human_field):
+        if not human_field.contains_ships():
             print("bot won")
             break
         _print_fields()

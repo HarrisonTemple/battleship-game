@@ -76,14 +76,10 @@ class Field:
             return
 
     def contains_ships(self):
-        contains_ships = False
         for row in range(FieldSize):
             if ShipTile in self.get_row(row):
-                contains_ships = True
-            else:
-                contains_ships = False
-        return contains_ships
-
+                return True
+        return False
 
 class Player:
     def __init__(self):
@@ -228,11 +224,13 @@ def game_loop():
     while True:
         human.shoot(bot_field)
         if not bot_field.contains_ships():
+            _print_fields()
             print("you won!")
             break
         _print_fields()
         bot.shoot(human_field)
         if not human_field.contains_ships():
+            _print_fields()
             print("bot won")
             break
         _print_fields()
